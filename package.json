@@ -1,0 +1,24 @@
+{
+  "name": "minista-project",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "minista",
+    "build": "minista build",
+    "preview": "minista preview"
+  },
+  "devDependencies": {
+    "minista": "^4.0.6",
+    "postcss-pxtorem": "^6.1.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "sass": "^1.81.0",
+    "vite": "^8.0.11"
+  },
+  "dependencies": {
+    "@a1rth/css-normalize": "^1.1.9",
+    "classnames": "^2.5.1",
+    "imask": "^7.6.1",
+    "swiper": "^11.1.15"
+  }
+}
