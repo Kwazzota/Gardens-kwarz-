@@ -1,0 +1,21 @@
+:root {
+  --color-white: #ECE7D7FF;
+  --color-gray: #78716C;
+
+  --color-brown: #78716c;
+  --color-dark-brown: #57534e;
+
+  --color-green-1: #7b9961;
+  --color-green-2: #047857  ;
+
+  --color-accent: #97302d;
+
+  --border: 6px solid var(--color-green-1);
+  --border-radius: 20px;
+
+  --box-shadow: 0 4px 4px -4px rgba(12, 12, 13, 0.05), 0 16px 32px -4px rgba(12, 12, 13, 0.1);
+
+  --input-height: 40px;
+
+  --transition-duration: 0.2s;
+}

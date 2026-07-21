@@ -1,0 +1,43 @@
+@tailwind utilities;
+
+/* Минимальные базовые стили для работы border и других утилит */
+@layer base {
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        border-width: 0;
+        border-style: solid;
+        border-color: theme('borderColor.DEFAULT', currentColor);
+    }
+
+    body, h1, h2, h3, h4, h5, h6, p, ul, ol {
+      margin: 0;
+      padding: 0;
+    }
+
+}
+/* Стили скроллбара */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(120, 113, 108, 0.3);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 113, 108, 0.5);
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 113, 108, 0.3) transparent;
+}

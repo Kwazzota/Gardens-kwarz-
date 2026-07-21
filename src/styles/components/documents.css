@@ -1,0 +1,51 @@
+.documents {
+    display: flex;
+    flex-direction: column;
+    row-gap: 10px;
+    border: var(--border);
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.documents__button {
+    background-color: var(--color-accent);
+    max-height: 80px;
+}
+
+.documents__button {
+    background-color: #78716c;
+    color: white;
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.documents__button--view {
+    background-color: var(--color-brown);
+}
+
+.documents__button--view:hover {
+    background-color: var(--color-dark-brown);
+}
+
+.documents__button--download {
+    background-color: var(--color-green-1); /* зелёный цвет для скачивания */
+}
+
+.documents__button--download:hover {
+    background-color: var(--color-green-2);
+}
+
+.documents__buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}

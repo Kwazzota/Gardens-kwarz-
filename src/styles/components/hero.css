@@ -1,0 +1,29 @@
+.hero {
+    width: 100%;
+    min-width: 100%;
+    min-height: 70px;
+}
+
+.hero__body {
+    width: 100%;
+    min-width: 100%;
+    z-index: 1;
+    padding: 10px;
+    text-align: center;
+    border: var(--border);
+    border-radius: var(--border-radius);
+}
+
+.hero__title {
+    font-size: 48px;
+}
+
+@media (max-width: 777px) {
+    .hero__title {
+        font-size: 30px;
+    }
+
+    .hero__description {
+        font-size: 14px;
+    }
+}
