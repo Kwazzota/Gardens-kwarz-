@@ -13,54 +13,56 @@ const Main = () => {
         { label: "Объявление 8", sublabel: "", description: "Текст восьмого объявления (видно только при скролле)" },
     ];
 
+    const BASE = import.meta.env.BASE_URL; // автоматически подставит "/Gardens-kwarz-/"
+
     const documents = [
         {
             label: "Документ 1",
-            sublabel: "",
-            description: "Текст первого документа",
-            src: "/documents/img.png", // <-- Путь из папки public!
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
             alt: "Документ 1",
-            downloadUrl: "/documents/img.png", // <-- Путь из папки public!
         },
         {
             label: "Документ 2",
-            sublabel: "",
-            description: "Текст второго документа",
-            src: "/documents/doc2.png",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
             alt: "Документ 2",
-            downloadUrl: "/documents/doc2.png",
         },
         {
             label: "Документ 3",
-            sublabel: "",
-            description: "Текст третьего документа",
-            src: "/documents/doc3.png",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
             alt: "Документ 3",
-            downloadUrl: "/documents/doc3.png",
         },
         {
             label: "Документ 4",
-            sublabel: "",
-            description: "Текст четвёртого документа",
-            src: "/documents/doc4.png",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
             alt: "Документ 4",
-            downloadUrl: "/documents/doc4.png",
         },
         {
             label: "Документ 5",
-            sublabel: "",
-            description: "Текст пятого документа",
-            src: "/documents/doc5.png",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
             alt: "Документ 5",
-            downloadUrl: "/documents/doc5.png",
         },
         {
             label: "Документ 6",
-            sublabel: "",
-            description: "Текст шестого документа",
-            src: "/documents/doc6.png",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
             alt: "Документ 6",
-            downloadUrl: "/documents/doc6.png",
+        },
+        {
+            label: "Документ 7",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
+            alt: "Документ 7",
+        },
+        {
+            label: "Документ 8",
+            src: `${BASE}documents/img.png`,
+            downloadUrl: `${BASE}documents/img.png`,
+            alt: "Документ 8",
         },
     ];
 
