@@ -3,12 +3,12 @@
   --color-gray: #78716C;
 
   --color-brown: #78716c;
-  --color-dark-brown: #57534e;
+  --color-dark-brown: #433d3d;
 
   --color-green-1: #7b9961;
-  --color-green-2: #047857  ;
+  --color-green-2: #194c17;
 
-  --color-accent: #97302d;
+  --color-accent: #a34646;
 
   --border: 6px solid var(--color-green-1);
   --border-radius: 20px;

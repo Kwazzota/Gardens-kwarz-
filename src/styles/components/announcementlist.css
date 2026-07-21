@@ -46,3 +46,84 @@
 .announcement-item__document {
     margin-top: 8px;
 }
+/* ============================================================
+   Перенос label и sublabel на отдельные строки.
+   Убираем двоеточие между ними.
+   ============================================================ */
+
+/* Контейнер контента карточки — вертикальная раскладка */
+.announcement-item__content {
+    display: flex;
+    flex-direction: column;  /* Элементы друг под другом, не в ряд */
+    gap: 2px;                /* Небольшой отступ между строками */
+}
+
+/* Заголовок — блочный, занимает всю ширину, на своей строке */
+.announcement-item__title {
+    display: block;          /* Блочный → всегда на новой строке */
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    word-wrap: break-word;   /* Длинные слова переносятся */
+}
+
+/* Подзаголовок — тоже блочный, на СЛЕДУЮЩЕЙ строке после заголовка */
+.announcement-item__sublabel {
+    display: block;          /* Блочный → новая строка */
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.3;
+    word-wrap: break-word;
+}
+
+/* Убираем двоеточие, если оно было добавлено через ::after */
+.announcement-item__title::after {
+    content: none !important;  /* Убираем любой ::after с двоеточием */
+}
+
+.announcement-item__sublabel::before {
+    content: none !important;  /* Убираем любой ::before с двоеточием */
+}
+
+/* ============================================================
+   То же самое для HoverExpand (левая колонка — объявления).
+   Если в unlumen-ui label и sublabel в одну строку —
+   эти правила заставят их переноситься.
+   ============================================================ */
+
+/* Контейнер элемента в HoverExpand */
+.hover-expand__item-content,
+.hover-expand__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Label в HoverExpand — на своей строке */
+.hover-expand__label,
+.hover-expand__item-label {
+    display: block;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+/* Sublabel в HoverExpand — на следующей строке */
+.hover-expand__sublabel,
+.hover-expand__item-sublabel {
+    display: block;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+/* Убираем двоеточия */
+.hover-expand__label::after,
+.hover-expand__item-label::after {
+    content: none !important;
+}
+
+.hover-expand__sublabel::before,
+.hover-expand__item-sublabel::before {
+    content: none !important;
+}
