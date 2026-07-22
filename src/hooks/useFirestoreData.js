@@ -1,21 +1,24 @@
 // ============================================================
 // src/hooks/useFirestoreData.js
-// Хук для работы с Firestore В РЕАЛЬНОМ ВРЕМЕНИ.
+// Хук синхронизации с Firestore В РЕАЛЬНОМ ВРЕМЕНИ + защита
+// от потери правок при перезагрузке.
 //
-// ЧТО ИЗМЕНИЛОСЬ ПО СРАВНЕНИЮ СО СТАРОЙ ВЕРСИЕЙ:
-//   Было: getDoc() — прочитали данные ОДИН раз при загрузке.
-//         Изменения с других устройств были не видны без F5.
-//   Стало: onSnapshot() — ПОДПИСКА. Firestore сам присылает
-//         новые данные каждый раз, когда кто-то их меняет.
-//         Изменение на телефоне → мгновенно видно на ПК и наоборот.
-//
-// КАК УСТРОЕНА ЗАЩИТА ОТ ЗАЦИКЛИВАНИЯ:
-//   Когда данные приходят из облака, мы их записываем в state.
-//   Это могло бы снова触发нуть запись в облако → бесконечный цикл.
-//   Чтобы этого не было, мы храним lastCloudData (JSON последних
-//   данных из облака) и перед записью СРАВНИВАЕМ:
-//     - если текущие данные == данным из облака → НЕ пишем;
-//     - если отличаются (пользователь реально изменил) → пишем.
+// ЧТО ЗДЕСЬ ПРОИСХОДИТ (по порядку):
+//   1. onSnapshot — ПОДПИСКА на документ в облаке. Срабатывает:
+//        - сразу при загрузке (отдаёт кэш, а потом свежие данные);
+//        - при ЛЮБОМ изменении с любого устройства.
+//   2. При изменении данных пользователем — записываем в облако
+//      с небольшой задержкой (debounce), чтобы не писать на
+//      каждую нажатую клавишу.
+//   3. ЗАЩИТА ОТ ЗАЦИКЛИВАНИЯ: данные, пришедшие из облака,
+//      запоминаем в lastCloudRef. Перед записью сравниваем —
+//      если текущие данные совпадают с облаком, НЕ пишем.
+//   4. ЗАЩИТА ОТ ПОТЕРИ ПРИ ПЕРЕЗАГРУЗКЕ (flush):
+//        - держим актуальные данные в dataRef;
+//        - при размонтировании компонента И при закрытии вкладки
+//          (beforeunload) — если есть «грязная» правка, которая
+//          ещё не ушла (debounce не досчитал), немедленно пишем
+//          её в кэш/облако. С офлайн-кэшем это быстро и надёжно.
 // ============================================================
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -24,16 +27,53 @@ import { doc, setDoc, onSnapshot } from "firebase/firestore";
 
 /**
  * @param {string} docId        — ID документа ("announcements" или "documents")
- * @param {Array}  defaultValue — дефолтные данные (если в облаке ещё пусто)
+ * @param {Array}  defaultValue — дефолтные данные (если в облаке и кэше пусто)
  * @returns {{ data: Array, setData: Function, loading: boolean }}
  */
 export function useFirestoreData(docId, defaultValue) {
     const [data, setDataState] = useState(defaultValue);
     const [loading, setLoading] = useState(true);
 
-    // JSON-строка последних данных, полученных ИЗ ОБЛАКА.
-    // Нужна, чтобы отличать "пришло из облака" от "изменил пользователь".
-    const lastCloudData = useRef(null);
+    // JSON последних данных, полученных ИЗ ОБЛАКА/КЭША.
+    // Нужен, чтобы отличать «пришло снаружи» от «изменил пользователь».
+    const lastCloudRef = useRef(null);
+
+    // Актуальные данные в виде ref — чтобы flush при закрытии вкладки
+    // видел САМОЕ СВЕЖЕЕ состояние (замыкание useEffect так не умеет).
+    const dataRef = useRef(defaultValue);
+    dataRef.current = data;
+
+    // Флаг «есть несохранённая правка» — ставим при записи,
+    // снимаем, когда данные совпали с облаком.
+    const dirtyRef = useRef(false);
+
+    // ============================================================
+    // Вспомогательная функция записи (используется и debounce, и flush)
+    // ============================================================
+    const writeNow = useCallback(async () => {
+        try {
+            const currentJson = JSON.stringify(dataRef.current);
+
+            // Если совпадает с облаком — писать нечего
+            if (currentJson === lastCloudRef.current) {
+                dirtyRef.current = false;
+                return;
+            }
+
+            const docRef = doc(db, "siteData", docId);
+            // С офлайн-кэшем setDoc резолвится сразу после записи в кэш,
+            // а отправка в облако идёт в фоне → правка не теряется.
+            await setDoc(docRef, { items: dataRef.current });
+
+            lastCloudRef.current = currentJson;
+            dirtyRef.current = false;
+            console.log(`✅ Данные "${docId}" сохранены`);
+        } catch (error) {
+            // Сюда попадём, например, при превышении 1 МБ на документ
+            // (слишком большие картинки в base64).
+            console.error(`❌ Ошибка записи "${docId}":`, error);
+        }
+    }, [docId]);
 
     // ============================================================
     // ПОДПИСКА в реальном времени (onSnapshot)
@@ -41,85 +81,88 @@ export function useFirestoreData(docId, defaultValue) {
     useEffect(() => {
         const docRef = doc(db, "siteData", docId);
 
-        // onSnapshot вызывается:
-        //   1. СРАЗУ при подписке (присылает текущие данные).
-        //   2. При КАЖДОМ изменении документа в облаке.
-        // Возвращает функцию unsubscribe для отписки.
         const unsubscribe = onSnapshot(
             docRef,
             async (docSnap) => {
                 if (docSnap.exists()) {
-                    // Документ есть → берём актуальные данные из облака
                     const cloudData = docSnap.data().items;
-
-                    // Запоминаем JSON этих данных, чтобы потом
-                    // не записать их обратно без изменений.
-                    lastCloudData.current = JSON.stringify(cloudData);
-
-                    // Обновляем state → компонент перерисуется
-                    setDataState(cloudData);
+                    lastCloudRef.current = JSON.stringify(cloudData);
+                    // Если пользователь прямо сейчас НЕ редактирует
+                    // (нет «грязной» правки) — принимаем данные из облака.
+                    // Это защищает от того, чтобы облако «затёрло»
+                    // локальную правку в момент её ввода.
+                    if (!dirtyRef.current) {
+                        setDataState(cloudData);
+                    }
                 } else {
-                    // Документа ещё нет (первый запуск) → создаём с дефолтом
+                    // Документа нет (самый первый запуск) — создаём
                     await setDoc(docRef, { items: defaultValue });
-                    lastCloudData.current = JSON.stringify(defaultValue);
+                    lastCloudRef.current = JSON.stringify(defaultValue);
                     setDataState(defaultValue);
                 }
                 setLoading(false);
             },
             (error) => {
-                // Обработчик ошибок подписки
-                console.error(`Ошибка подписки Firestore (${docId}):`, error);
+                // Честная обработка ошибки подписки.
+                // С офлайн-кэшем сюда попадаем редко (только если совсем
+                // нет ни кэша, ни сети). Логируем явно.
+                console.error(`⚠️ Ошибка подписки Firestore (${docId}):`, error);
                 setLoading(false);
             }
         );
 
-        // При размонтировании компонента — отписываемся,
-        // чтобы не утекала память и не было лишних запросов.
         return () => unsubscribe();
     }, [docId]);
 
     // ============================================================
-    // ЗАПИСЬ в облако при изменении данных
+    // ЗАПИСЬ с задержкой (debounce) при изменении данных
     // ============================================================
     useEffect(() => {
-        // Пока идёт первая загрузка — не пишем
-        if (loading) return;
+        if (loading) return; // пока первая загрузка — не пишем
 
-        const saveToCloud = async () => {
-            try {
-                const currentJson = JSON.stringify(data);
+        const currentJson = JSON.stringify(data);
+        if (currentJson === lastCloudRef.current) {
+            dirtyRef.current = false; // совпало с облаком — чисто
+            return;
+        }
 
-                // ЗАЩИТА ОТ ЗАЦИКЛИВАНИЯ:
-                // если данные идентичны тем, что пришли из облака, —
-                // значит пользователь ничего не менял, писать НЕ НУЖНО.
-                if (currentJson === lastCloudData.current) {
-                    return;
-                }
+        // Данные отличаются от облака → есть правка
+        dirtyRef.current = true;
 
-                // Данные реально изменились → пишем в облако
-                const docRef = doc(db, "siteData", docId);
-                await setDoc(docRef, { items: data });
+        const timer = setTimeout(() => {
+            writeNow();
+        }, 400); // ждём паузу 400 мс после последнего изменения
 
-                // Обновляем "последние облачные данные", чтобы
-                // эхо от нашей же записи не触发нуло повторную запись.
-                lastCloudData.current = currentJson;
+        return () => clearTimeout(timer);
+    }, [data, docId, loading, writeNow]);
 
-                console.log(`✅ Данные "${docId}" сохранены в облако`);
-            } catch (error) {
-                // ВАЖНО: здесь ловится ошибка "документ больше 1 МБ".
-                // Если видите в консоли "1048576 bytes" — картинки слишком большие.
-                console.error(`❌ Ошибка записи "${docId}":`, error);
+    // ============================================================
+    // FLUSH: сохраняем «грязную» правку при закрытии/перезагрузке
+    // ============================================================
+    useEffect(() => {
+        // beforeunload = пользователь закрывает вкладку / жмёт F5
+        const handleBeforeUnload = () => {
+            if (dirtyRef.current) {
+                // fire-and-forget: с офлайн-кэшем запись в IndexedDB
+                // успеет пройти даже без await
+                writeNow();
             }
         };
 
-        // Debounce 500 мс: не пишем при каждом нажатии клавиши,
-        // а ждём паузу после последнего изменения.
-        const timer = setTimeout(saveToCloud, 500);
-        return () => clearTimeout(timer);
-    }, [data, docId, loading]);
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        // cleanup сработает при размонтировании компонента
+        // (например, переход на другую страницу) — тоже сохраняем
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+            if (dirtyRef.current) {
+                writeNow();
+            }
+        };
+    }, [writeNow]);
 
     // ============================================================
-    // Публичный setData (поддерживает значение и функцию-обновитель)
+    // Публичный setData (значение или функция-обновитель)
     // ============================================================
     const setData = useCallback((newData) => {
         setDataState((prev) =>

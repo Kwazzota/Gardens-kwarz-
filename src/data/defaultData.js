@@ -47,53 +47,64 @@ export const defaultItems = [
     },
 ];
 
+// ============================================================
+// src/data/defaultData.js  (фрагмент — массив defaultDocuments)
+//
+// ЧТО ИЗМЕНИЛОСЬ:
+//   Раньше в дефолте были пути "src/assets/images/documents/...".
+//   На GitHub Pages этих файлов НЕТ → они давали 404 и битые иконки.
+//   Теперь src и downloadUrl пустые: карточка создаётся БЕЗ картинки,
+//   а реальную картинку админ добавляет кнопкой «Выбрать изображение»
+//   (тогда она сохранится в base64 и будет работать везде).
+// ============================================================
+
 export const defaultDocuments = [
     {
         label: "Документ 1",
         sublabel: "",
         description: "Текст первого объявления",
-        src: "src/assets/images/documents/img.png",
+        src: "",          // ← пусто, чтобы не было 404
         alt: "Документ 1",
-        downloadUrl: "src/assets/images/documents/img.png",
+        downloadUrl: "",  // ← пусто
     },
     {
         label: "Документ 2",
         sublabel: "",
         description: "Текст второго объявления",
-        src: "src/assets/images/documents/doc2.png",
+        src: "",
         alt: "Документ 2",
-        downloadUrl: "src/assets/images/documents/img.png",
+        downloadUrl: "",
     },
     {
         label: "Документ 3",
         sublabel: "",
         description: "Текст третьего объявления",
-        src: "src/assets/images/documents/doc3.png",
+        src: "",
         alt: "Документ 3",
-        downloadUrl: "src/assets/images/documents/img.png",
+        downloadUrl: "",
     },
     {
         label: "Документ 4",
         sublabel: "",
         description: "Текст четвёртого объявления",
-        src: "src/assets/images/documents/doc4.png",
+        src: "",
         alt: "Документ 4",
-        downloadUrl: "src/assets/images/documents/img.png",
+        downloadUrl: "",
     },
     {
         label: "Документ 5",
         sublabel: "",
         description: "Текст пятого объявления",
-        src: "src/assets/images/documents/doc5.png",
+        src: "",
         alt: "Документ 5",
-        downloadUrl: "src/assets/images/documents/img.png",
+        downloadUrl: "",
     },
     {
         label: "Документ 6",
         sublabel: "",
         description: "Текст шестого объявления",
-        src: "src/assets/images/documents/doc6.png",
+        src: "",
         alt: "Документ 6",
-        downloadUrl: "src/assets/images/documents/img.png",
+        downloadUrl: "",
     },
 ];
