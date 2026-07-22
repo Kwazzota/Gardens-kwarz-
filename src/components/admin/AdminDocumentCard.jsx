@@ -1,44 +1,23 @@
 // ============================================================
 // AdminDocumentCard.jsx
-// Карточка ОДНОГО документа в админ-панели.
-//
 // ЧТО ИЗМЕНИЛОСЬ:
-//   Поля src и downloadUrl заменены на <input type="file">.
-//   Пользователь НАЖИМАЕТ КНОПКУ → открывается проводник Windows/Mac →
-//   выбирает файл → файл конвертируется в base64 → сохраняется.
-//
-//   Это сделано для людей, не знакомых с компьютером:
-//   им не нужно вводить путь к файлу вручную.
-//
-// КАК РАБОТАЕТ КОНВЕРТАЦИЯ:
-//   1. Пользователь выбирает файл через проводник.
-//   2. FileReader.readAsDataURL() читает файл и превращает его
-//      в строку вида "data:image/png;base64,iVBORw0KGgo..."
-//   3. Эта строка сохраняется в localStorage как значение src.
-//   4. На главной странице <img src="data:image/png;base64,...">
-//      отображает картинку без обращения к серверу.
-//
-// ОГРАНИЧЕНИЕ:
-//   localStorage вмещает ~5-10 МБ на весь сайт.
-//   Одна картинка в base64 занимает в ~1.37 раза больше, чем файл.
-//   Т.е. картинка 3 МБ → в localStorage ~4 МБ.
-//   Если нужно больше — в будущем понадобится бэкенд.
+//   При выборе изображения оно теперь СЖИМАЕТСЯ через compressImage
+//   перед сохранением. Это защищает от лимита Firestore в 1 МБ.
 // ============================================================
 
 import { useRef } from "react";
+import { compressImage } from "../../utils/compressImage"; // ← новый импорт
 
 const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
-    // Ссылки на скрытые input[type="file"].
-    // Нужны, чтобы по нажатию на красивую кнопку открывался проводник.
     const srcInputRef = useRef(null);
     const downloadInputRef = useRef(null);
 
     /**
-     * Обработчик выбора файла для ПРЕВЬЮ (src).
-     * Вызывается когда пользователь выбрал файл в проводнике.
+     * Выбор изображения для ПРЕВЬЮ (src).
+     * Теперь со сжатием.
      */
-    const handleSrcFileSelect = (e) => {
-        const file = e.target.files[0]; // Берём первый выбранный файл
+    const handleSrcFileSelect = async (e) => {
+        const file = e.target.files[0];
         if (!file) return;
 
         // Проверяем, что это изображение
@@ -47,33 +26,34 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
             return;
         }
 
-        // Проверяем размер (максимум 4 МБ, чтобы влезло в localStorage)
-        if (file.size > 4 * 1024 * 1024) {
-            alert("Файл слишком большой. Максимум 4 МБ.");
-            return;
-        }
+        try {
+            // Показываем, что идёт обработка (опционально)
+            // Сжимаем: максимум 1200px по ширине, качество 70%
+            const compressedBase64 = await compressImage(file, 1200, 0.7);
 
-        // FileReader читает файл и конвертирует в base64-строку
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            // event.target.result = "data:image/png;base64,iVBORw0KGgo..."
-            // Сохраняем эту строку как src
-            onChange(index, "src", event.target.result);
-        };
-        reader.readAsDataURL(file); // Запускаем чтение
+            // Сохраняем СЖАТУЮ картинку (весит в разы меньше оригинала)
+            onChange(index, "src", compressedBase64);
+        } catch (error) {
+            console.error("Ошибка сжатия изображения:", error);
+            alert("Не удалось обработать изображение. Попробуйте другой файл.");
+        }
     };
 
     /**
-     * Обработчик выбора файла для СКАЧИВАНИЯ (downloadUrl).
-     * Может быть любой файл (PDF, DOCX, PNG и т.д.)
+     * Выбор файла для СКАЧИВАНИЯ (downloadUrl).
+     * Здесь сжатие НЕ применяем (это может быть PDF/DOCX),
+     * но проверяем размер, чтобы не превысить лимит Firestore.
      */
     const handleDownloadFileSelect = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Проверяем размер (максимум 4 МБ)
-        if (file.size > 4 * 1024 * 1024) {
-            alert("Файл слишком большой. Максимум 4 МБ.");
+        // Лимит ~700 КБ для файла скачивания (с запасом под 1 МБ документа)
+        if (file.size > 700 * 1024) {
+            alert(
+                "Файл слишком большой для хранения в облаке.\n" +
+                "Максимум ~700 КБ. Сожмите файл или используйте ссылку на облачное хранилище."
+            );
             return;
         }
 
@@ -84,12 +64,8 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
         reader.readAsDataURL(file);
     };
 
-    /**
-     * Удалить выбранное изображение (сбросить src).
-     */
     const handleRemoveSrc = () => {
         onChange(index, "src", "");
-        // Очищаем input, чтобы можно было выбрать тот же файл повторно
         if (srcInputRef.current) srcInputRef.current.value = "";
     };
 
@@ -97,6 +73,9 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
         onChange(index, "downloadUrl", "");
         if (downloadInputRef.current) downloadInputRef.current.value = "";
     };
+
+    // ... ДАЛЬШЕ ИДЁТ ТОТ ЖЕ JSX (return), ЧТО БЫЛ РАНЬШЕ ...
+    // Его менять не нужно — поля, кнопки, превью остаются прежними.
 
     return (
         <div className="admin-card admin-card--document">
