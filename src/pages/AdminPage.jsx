@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useLocalStorageData } from "../hooks/useLocalStorageData";
+import { useFirestoreData } from "../hooks/useFirestoreData";
 import { defaultItems, defaultDocuments } from "../data/defaultData";
 import AdminAnnouncementCard from "../components/admin/AdminAnnouncementCard";
 import AdminDocumentCard from "../components/admin/AdminDocumentCard";
@@ -25,8 +25,10 @@ const AdminPage = () => {
     );
 
     // --- Данные ---
-    const { data: items, setData: setItems } = useLocalStorageData("app_items", defaultItems);
-    const { data: documents, setData: setDocuments } = useLocalStorageData("app_documents", defaultDocuments);
+    const { data: items, setData: setItems, loading: itemsLoading } =
+        useFirestoreData("announcements", defaultItems);
+    const { data: documents, setData: setDocuments, loading: docsLoading } =
+        useFirestoreData("documents", defaultDocuments);
 
     const [activeTab, setActiveTab] = useState("announcements");
 
@@ -104,6 +106,14 @@ const AdminPage = () => {
     // ============================================================
     if (!isAuthed) {
         return <AdminLogin onSuccess={() => setIsAuthed(true)} />;
+    }
+
+    if (itemsLoading || docsLoading) {
+        return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+                <p>⏳ Загрузка данных из облака...</p>
+            </div>
+        );
     }
 
     // ============================================================
