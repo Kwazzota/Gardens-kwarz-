@@ -1,25 +1,24 @@
 // ============================================================
-// AdminPage.jsx
-// Страница админ-панели (маршрут /admin).
+// AdminPage.jsx — админ-панель (маршрут /admin).
 //
-// ЧТО ДОБАВЛЕНО:
-//   - Проверка авторизации через sessionStorage.
-//   - Если не авторизован → показываем AdminLogin (форму пароля).
-//   - Если авторизован → показываем админку.
-//   - Кнопка "Выйти" → очищает sessionStorage → снова форма пароля.
+// ЧТО ДОБАВЛЕНО (задача 1):
+//   - Третья вкладка «📰 Новости» и работа с массивом news через
+//     useFirestoreData("news", defaultNews).
+//   - Карточка новости — AdminNewsCard (заголовок + картинка + подпись).
+//   - Сброс к дефолтным теперь трогает и новости.
+// Остальное (авторизация, объявления, документы) — без изменений.
 // ============================================================
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useFirestoreData } from "../hooks/useFirestoreData";
-import { defaultItems, defaultDocuments } from "../data/defaultData";
+import { defaultItems, defaultDocuments, defaultNews } from "../data/defaultData";
 import AdminAnnouncementCard from "../components/admin/AdminAnnouncementCard";
 import AdminDocumentCard from "../components/admin/AdminDocumentCard";
+import AdminNewsCard from "../components/admin/AdminNewsCard";
 import AdminLogin from "../components/admin/AdminLogin";
 
 const AdminPage = () => {
-    // --- Проверка авторизации ---
-    // Читаем sessionStorage: если "admin_auth" === "true" → пользователь ввёл пароль.
     const [isAuthed, setIsAuthed] = useState(
         () => sessionStorage.getItem("admin_auth") === "true"
     );
@@ -29,6 +28,8 @@ const AdminPage = () => {
         useFirestoreData("announcements", defaultItems);
     const { data: documents, setData: setDocuments, loading: docsLoading } =
         useFirestoreData("documents", defaultDocuments);
+    const { data: news, setData: setNews, loading: newsLoading } =
+        useFirestoreData("news", defaultNews);
 
     const [activeTab, setActiveTab] = useState("announcements");
 
@@ -40,13 +41,11 @@ const AdminPage = () => {
             prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
         );
     };
-
     const handleItemDelete = (index) => {
         if (window.confirm("Удалить это объявление?")) {
             setItems((prev) => prev.filter((_, i) => i !== index));
         }
     };
-
     const handleItemAdd = () => {
         setItems((prev) => [
             ...prev,
@@ -62,13 +61,11 @@ const AdminPage = () => {
             prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc))
         );
     };
-
     const handleDocDelete = (index) => {
         if (window.confirm("Удалить этот документ?")) {
             setDocuments((prev) => prev.filter((_, i) => i !== index));
         }
     };
-
     const handleDocAdd = () => {
         setDocuments((prev) => [
             ...prev,
@@ -84,31 +81,54 @@ const AdminPage = () => {
     };
 
     // ============================================================
+    // НОВОСТИ
+    // ============================================================
+    const handleNewsChange = (index, field, value) => {
+        setNews((prev) =>
+            prev.map((n, i) => (i === index ? { ...n, [field]: value } : n))
+        );
+    };
+    const handleNewsDelete = (index) => {
+        if (window.confirm("Удалить эту новость?")) {
+            setNews((prev) => prev.filter((_, i) => i !== index));
+        }
+    };
+    const handleNewsAdd = () => {
+        setNews((prev) => [
+            ...prev,
+            {
+                label: `Новость ${prev.length + 1}`,
+                image: "",
+                alt: `Новость ${prev.length + 1}`,
+                description: "",
+            },
+        ]);
+    };
+
+    // ============================================================
     // СБРОС
     // ============================================================
     const handleReset = () => {
         if (window.confirm("Сбросить ВСЕ данные к начальным?")) {
             setItems(defaultItems);
             setDocuments(defaultDocuments);
+            setNews(defaultNews);
         }
     };
 
     // ============================================================
-    // ВЫХОД из админки
+    // ВЫХОД
     // ============================================================
     const handleLogout = () => {
-        sessionStorage.removeItem("admin_auth"); // Удаляем маркер авторизации
-        setIsAuthed(false); // Показываем форму пароля
+        sessionStorage.removeItem("admin_auth");
+        setIsAuthed(false);
     };
 
-    // ============================================================
-    // ЕСЛИ НЕ АВТОРИЗОВАН → показываем форму пароля
-    // ============================================================
     if (!isAuthed) {
         return <AdminLogin onSuccess={() => setIsAuthed(true)} />;
     }
 
-    if (itemsLoading || docsLoading) {
+    if (itemsLoading || docsLoading || newsLoading) {
         return (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
                 <p>⏳ Загрузка данных из облака...</p>
@@ -116,9 +136,6 @@ const AdminPage = () => {
         );
     }
 
-    // ============================================================
-    // АВТОРИЗОВАН → показываем админку
-    // ============================================================
     return (
         <div className="admin-page">
             <header className="admin-header">
@@ -130,7 +147,6 @@ const AdminPage = () => {
                     <button className="admin-btn admin-btn--reset" onClick={handleReset}>
                         Сбросить к дефолтным
                     </button>
-                    {/* Кнопка выхода — очищает sessionStorage */}
                     <button className="admin-btn admin-btn--logout" onClick={handleLogout}>
                         Выйти 🔓
                     </button>
@@ -149,6 +165,12 @@ const AdminPage = () => {
                     onClick={() => setActiveTab("documents")}
                 >
                     📄 Документы ({documents.length})
+                </button>
+                <button
+                    className={`admin-tab ${activeTab === "news" ? "admin-tab--active" : ""}`}
+                    onClick={() => setActiveTab("news")}
+                >
+                    📰 Новости ({news.length})
                 </button>
             </nav>
 
@@ -199,6 +221,38 @@ const AdminPage = () => {
                         </div>
                         {documents.length === 0 && (
                             <p className="admin-empty">Нет документов. Нажмите «+ Добавить».</p>
+                        )}
+                    </section>
+                )}
+
+                {activeTab === "news" && (
+                    <section className="admin-section">
+                        <div className="admin-section__header">
+                            <h2>Управление новостями</h2>
+                            <button className="admin-btn admin-btn--add" onClick={handleNewsAdd}>
+                                + Добавить новость
+                            </button>
+                        </div>
+                        <p className="admin-empty" style={{ marginBottom: "16px" }}>
+                            ⚠️ Картинки новостей хранятся в облаке как часть одного документа.
+                            После сжатия одна картинка ≈ 150–300 КБ, лимит документа — 1 МБ,
+                            то есть примерно 3–5 баннеров. Если запись начнёт падать с ошибкой
+                            размера — это он; решение (хранение картинок в Storage) сделаем на
+                            шаге 4 вместе с PDF.
+                        </p>
+                        <div className="admin-cards-grid">
+                            {news.map((item, index) => (
+                                <AdminNewsCard
+                                    key={index}
+                                    index={index}
+                                    item={item}
+                                    onChange={handleNewsChange}
+                                    onDelete={handleNewsDelete}
+                                />
+                            ))}
+                        </div>
+                        {news.length === 0 && (
+                            <p className="admin-empty">Нет новостей. Нажмите «+ Добавить».</p>
                         )}
                     </section>
                 )}

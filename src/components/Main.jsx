@@ -45,7 +45,7 @@ const Main = () => {
         return () => mq.removeEventListener("change", onChange);
     }, []);
 
-    const VISIBLE_ITEMS = 5;
+    const VISIBLE_ITEMS = 4;
 
     if (itemsLoading || docsLoading) {
         return (
