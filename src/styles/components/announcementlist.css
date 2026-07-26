@@ -1,14 +1,3 @@
-/* ============================================================
-   ОБЪЯВЛЕНИЯ И ДОКУМЕНТЫ — список карточек.
-   Объединённая и почищенная версия:
-     - убраны дубли (было два набора правил для content/title/sublabel);
-     - удалены мёртвые правила .hover-expand__* (компонент больше
-       не используется на главной);
-     - добавлен стиль .announcement-item__description (полный текст);
-     - добавлен min-width:0 на контент — это и есть фикс обрезки
-       текста СПРАВА (flex-потомок теперь сжимается до ширины окна).
-   ============================================================ */
-
 .announcement-list {
     overflow-y: auto;
     padding-right: 10px;
@@ -34,66 +23,107 @@
     margin-right: 12px;
 }
 
-/* Контейнер контента: вертикальная раскладка.
-   min-width: 0 — КЛЮЧЕВОЕ: без него flex-потомок не сжимается,
-   и длинный текст торчит за правый край (та самая обрезка справа). */
 .announcement-item__content {
     flex: 1;
-    min-width: 0;            /* ← разрешаем сжиматься до ширины окна */
-    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-/* Заголовок — на своей строке, переносится по ширине */
 .announcement-item__title {
-    display: block;
-    margin: 0;
     font-size: 18px;
     font-weight: 600;
-    line-height: 1.3;
     color: #1a1a1a;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-/* Подзаголовок — на следующей строке */
-.announcement-item__sublabel {
-    display: block;
     margin: 0;
+}
+
+.announcement-item__sublabel {
     font-size: 14px;
-    line-height: 1.3;
     color: rgba(120, 113, 108, 0.7);
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    margin: 0;
 }
 
-/* ПОЛНЫЙ текст объявления (поле description).
-   white-space: pre-line сохраняет абзацы, пустые строки и эмодзи
-   ровно так, как они набраны в админке. Никакого line-clamp — весь текст. */
-.announcement-item__description {
-    display: block;
-    margin: 4px 0 0;
-    font-size: 15px;
-    line-height: 1.55;
-    color: #333;
-    white-space: pre-line;     /* ← абзацы и переносы сохраняются */
-    overflow-wrap: anywhere;   /* ← перенос по ширине, без обрезки */
-    word-break: break-word;
-}
-
-/* Кнопки документа (просмотр/скачать) в списке документов */
 .announcement-item__document {
     margin-top: 8px;
 }
+/* ============================================================
+   Перенос label и sublabel на отдельные строки.
+   Убираем двоеточие между ними.
+   ============================================================ */
 
-/* На всякий случай убираем двоеточия, если они где-то были через псевдоэлементы */
-.announcement-item__title::after,
+/* Контейнер контента карточки — вертикальная раскладка */
+.announcement-item__content {
+    display: flex;
+    flex-direction: column;  /* Элементы друг под другом, не в ряд */
+    gap: 2px;                /* Небольшой отступ между строками */
+}
+
+/* Заголовок — блочный, занимает всю ширину, на своей строке */
+.announcement-item__title {
+    display: block;          /* Блочный → всегда на новой строке */
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    word-wrap: break-word;   /* Длинные слова переносятся */
+}
+
+/* Подзаголовок — тоже блочный, на СЛЕДУЮЩЕЙ строке после заголовка */
+.announcement-item__sublabel {
+    display: block;          /* Блочный → новая строка */
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.3;
+    word-wrap: break-word;
+}
+
+/* Убираем двоеточие, если оно было добавлено через ::after */
+.announcement-item__title::after {
+    content: none !important;  /* Убираем любой ::after с двоеточием */
+}
+
 .announcement-item__sublabel::before {
-    content: none !important;
+    content: none !important;  /* Убираем любой ::before с двоеточием */
 }
 
 /* ============================================================
-   ГАРАНТИЯ РАБОЧЕГО СКРОЛЛА окна объявлений.
-   Реальный скролл даёт обёртка .
+   То же самое для HoverExpand (левая колонка — объявления).
+   Если в unlumen-ui label и sublabel в одну строку —
+   эти правила заставят их переноситься.
+   ============================================================ */
+
+/* Контейнер элемента в HoverExpand */
+.hover-expand__item-content,
+.hover-expand__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Label в HoverExpand — на своей строке */
+.hover-expand__label,
+.hover-expand__item-label {
+    display: block;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+/* Sublabel в HoverExpand — на следующей строке */
+.hover-expand__sublabel,
+.hover-expand__item-sublabel {
+    display: block;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+/* Убираем двоеточия */
+.hover-expand__label::after,
+.hover-expand__item-label::after {
+    content: none !important;
+}
+
+.hover-expand__sublabel::before,
+.hover-expand__item-sublabel::before {
+    content: none !important;
+}
