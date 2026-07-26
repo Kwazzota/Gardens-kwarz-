@@ -192,7 +192,16 @@ const Footer = () => {
                     <img
                         src={SCHEME_FILE}
                         alt="Схема сада «Кварц»"
-                        className="w-full h-full object-contain"
+                        style={{
+                            display: "block",
+                            margin: "auto",
+                            width: "auto",
+                            height: "auto",
+                            maxWidth: "90vw",
+                            maxHeight: "82vh",
+                            objectFit: "contain",
+                            borderRadius: "12px",
+                        }}
                     />
                 </BasicModal>
             )}
