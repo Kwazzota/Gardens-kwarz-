@@ -1,37 +1,205 @@
-.footer__list {
+/* ============================================================
+   FOOTER — две колонки: Контакты | Схема сада (задачи 2 и 3).
+   Левая колонка — адрес (карта) и телефон (tel:) в столбик с иконками;
+   правая — заголовок + подсказка + крупная кнопка схемы.
+   Между колонками — вертикальный зелёный разделитель (var(--color-green-1));
+   на ≤777px — одна колонка с горизонтальным разделителем.
+   Живость: fade-up колонок при прокрутке (в JSX), hover/focus-отклики
+   ссылок и кнопки (подсветка, сдвиг иконок, выезжающее подчёркивание,
+   рост тени), focus-visible контур для клавиатуры.
+   Палитра — существующая (бежевый фон сайта + зелёный акцент),
+   новые цвета не вводятся.
+   ============================================================ */
+
+.footer__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 50px;
-    padding: 50px;
+    padding: 40px 50px;
     border: var(--border);
     border-radius: var(--border-radius);
 }
 
-.footer__item {
+.footer__col {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 14px;
+    padding: 12px 40px;
 }
 
-/* Разделитель для элементов первой колонки, кроме последнего ряда */
-.footer__item:not(:last-child) {
+/* Вертикальный разделитель между колонками */
+.footer__col--contacts {
     border-right: 3px solid var(--color-green-1);
-    padding-right: 50px;
-    height: 50px;
 }
 
+/* Мелкий капс-заголовок колонки */
+.footer__col-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0.5;
+}
+
+/* Подсказка под заголовком схемы */
+.footer__col-hint {
+    margin: -8px 0 2px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0.6;
+}
+
+/* ---- Ссылки-контакты (адрес / телефон) ---- */
+.footer__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    max-width: 100%;
+    padding: 6px 4px;
+    color: inherit;
+    text-decoration: none;
+    text-align: center;
+    line-height: 1.35;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.25s ease, transform 0.15s ease;
+}
+
+.footer__link-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    opacity: 0.55;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.footer__link-text {
+    position: relative;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.footer__link-text::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 2px;
+    background-color: var(--color-green-1);
+    border-radius: 2px;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.3s ease;
+}
+
+.footer__link:hover,
+.footer__link:focus-visible {
+    color: var(--color-green-1);
+}
+
+.footer__link:hover .footer__link-icon,
+.footer__link:focus-visible .footer__link-icon {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.1);
+}
+
+.footer__link:hover .footer__link-text::after,
+.footer__link:focus-visible .footer__link-text::after {
+    transform: scaleX(1);
+}
+
+.footer__link:focus-visible {
+    outline: 2px solid var(--color-green-1);
+    outline-offset: 4px;
+}
+
+.footer__link:active {
+    transform: scale(0.97);
+}
+
+/* ---- Кнопка «Открыть схему сада» ---- */
+.footer__scheme-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    /* Полупрозрачная заливка акцентом — тёмный текст читается на любом green-1 */
+    background: color-mix(in srgb, var(--color-green-1) 14%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--color-green-1) 55%, transparent);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--color-green-1) 12%, transparent);
+    transition:
+            transform 0.2s ease,
+            box-shadow 0.3s ease,
+            background 0.3s ease,
+            border-color 0.3s ease;
+}
+
+.footer__scheme-btn-icon,
+.footer__scheme-btn-arrow {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.footer__scheme-btn-arrow {
+    opacity: 0.7;
+}
+
+.footer__scheme-btn:hover,
+.footer__scheme-btn:focus-visible {
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--color-green-1) 26%, transparent);
+    border-color: color-mix(in srgb, var(--color-green-1) 80%, transparent);
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--color-green-1) 30%, transparent);
+}
+
+.footer__scheme-btn:hover .footer__scheme-btn-icon {
+    transform: scale(1.12) rotate(-3deg);
+}
+
+.footer__scheme-btn:hover .footer__scheme-btn-arrow {
+    opacity: 1;
+    transform: translateX(4px) scale(1.1);
+}
+
+.footer__scheme-btn:focus-visible {
+    outline: 2px solid var(--color-green-1);
+    outline-offset: 4px;
+}
+
+.footer__scheme-btn:active {
+    transform: translateY(0) scale(0.97);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-green-1) 20%, transparent);
+}
+
+/* ============================================================
+   АДАПТИВ
+   ============================================================ */
 @media (max-width: 777px) {
-    .footer__list {
+    .footer__grid {
         grid-template-columns: 1fr;
-        gap: 10px;
         padding: 30px;
     }
 
-    .footer__item:not(:last-child) {
+    .footer__col {
+        padding: 24px 10px;
+    }
+
+    /* Вертикальный разделитель → горизонтальный между блоками */
+    .footer__col--contacts {
         border-right: none;
         border-bottom: 3px solid var(--color-green-1);
-        padding-right: 0;
-        padding-block: 30px;
-        height: 0;
     }
 }
