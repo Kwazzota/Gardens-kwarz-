@@ -1,13 +1,12 @@
 // ============================================================
-// AnnouncementList.jsx
+// AnnouncementList.jsx — список карточек (документы) (задача 4).
 //
 // ЧТО ИЗМЕНИЛОСЬ:
-//   Раньше label и sublabel могли отображаться в одну строку
-//   через двоеточие (зависит от CSS).
-//   Теперь:
-//     - label и sublabel ВСЕГДА на отдельных строках.
-//     - Никакого двоеточия между ними.
-//     - sublabel отображается только если он НЕ пустой.
+//   Условие рендера блока Document изменено с {item.src && …} на
+//   {(item.src || item.downloadUrl) && …}. Иначе документ, у которого
+//   загружен ТОЛЬКО PDF (без картинки-превью), не показывал кнопку
+//   «Скачать» на сайте вообще.
+// Остальное (label/sublabel на отдельных строках) — без изменений.
 // ============================================================
 
 import { useState } from "react";
@@ -28,30 +27,18 @@ const AnnouncementList = ({ items, visibleItems = 5, collapsedHeight = 80 }) => 
                     style={{ minHeight: `${collapsedHeight}px` }}
                 >
                     <div className="announcement-item__number">
-                        {String(index + 1).padStart(2, '0')}
+                        {String(index + 1).padStart(2, "0")}
                     </div>
 
                     <div className="announcement-item__content">
-                        {/*
-                            Заголовок (label) — на ПЕРВОЙ строке.
-                            Подзаголовок (sublabel) — на ВТОРОЙ строке.
-                            Между ними НЕТ двоеточия.
-                            Каждый элемент — блочный (display: block),
-                            поэтому они автоматически на разных строках.
-                        */}
-                        <h3 className="announcement-item__title">
-                            {item.label}
-                        </h3>
+                        <h3 className="announcement-item__title">{item.label}</h3>
 
-                        {/* sublabel показываем только если он не пустой */}
                         {item.sublabel && (
-                            <p className="announcement-item__sublabel">
-                                {item.sublabel}
-                            </p>
+                            <p className="announcement-item__sublabel">{item.sublabel}</p>
                         )}
 
-                        {/* Кнопки просмотра/скачивания документа */}
-                        {item.src && (
+                        {/* Кнопки: если есть превью ИЛИ файл скачивания */}
+                        {(item.src || item.downloadUrl) && (
                             <Document
                                 src={item.src}
                                 alt={item.alt || item.label}

@@ -1,3 +1,18 @@
+// ============================================================
+// Document.jsx — кнопки «Просмотр / Скачать» + модалка (задача 4).
+//
+// ЧТО ИЗМЕНИЛОСЬ:
+//   1) handleDownload различает два формата downloadUrl:
+//        - https://… (новая ссылка из Storage) → window.open во вкладке;
+//          браузер сам покажет PDF во встроенном просмотрщике или скачает.
+//          Принудительное <a download> для cross-origin НЕ работает,
+//          поэтому для внешних ссылок используем открытие во вкладке.
+//        - data:… (старый base64) → прежняя логика принудительного скачивания.
+//   2) Кнопка «Просмотр» показывается только если есть превью (src) —
+//      иначе (документ только с PDF, без картинки) модалке нечего показать.
+//   3) <img> в модалке ограничен экраном (max-h-[80vh]) — фикс центрирования.
+// ============================================================
+
 import { Button } from "./ui/button";
 import BasicModal from "./ui/smoothui/basic-modal";
 import { useState } from "react";
@@ -5,22 +20,27 @@ import { useState } from "react";
 const Document = (props) => {
     const {
         src,
-        alt = '',
+        alt = "",
         className,
-        buttonLabel = 'Просмотр документа',
+        buttonLabel = "Просмотр документа",
         downloadUrl,
-        downloadLabel = 'Скачать документ',
+        downloadLabel = "Скачать документ",
     } = props;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleDownload = () => {
-        if (downloadUrl) {
-            // Создаём временную ссылку для скачивания
-            const link = document.createElement('a');
+        if (!downloadUrl) return;
+
+        if (/^https?:\/\//i.test(downloadUrl)) {
+            // Ссылка из Storage — открываем во вкладке (PDF откроется в просмотрщике).
+            window.open(downloadUrl, "_blank", "noopener");
+        } else {
+            // Старый base64 — принудительное скачивание.
+            const link = document.createElement("a");
             link.href = downloadUrl;
             link.download = true;
-            link.target = '_blank';
+            link.target = "_blank";
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -29,13 +49,16 @@ const Document = (props) => {
 
     return (
         <>
-            <div className={`documents__buttons ${className || ''}`}>
-                <Button
-                    className="documents__button documents__button--view"
-                    onClick={() => setIsModalOpen(true)}
-                >
-                    {buttonLabel}
-                </Button>
+            <div className={`documents__buttons ${className || ""}`}>
+                {/* Просмотр — только если есть превью-картинка */}
+                {src && (
+                    <Button
+                        className="documents__button documents__button--view"
+                        onClick={() => setIsModalOpen(true)}
+                    >
+                        {buttonLabel}
+                    </Button>
+                )}
 
                 {downloadUrl && (
                     <Button

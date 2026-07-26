@@ -1,67 +1,84 @@
 // ============================================================
-// AdminDocumentCard.jsx
+// AdminDocumentCard.jsx — карточка документа в админке (задача 4).
+//
 // ЧТО ИЗМЕНИЛОСЬ:
-//   При выборе изображения оно теперь СЖИМАЕТСЯ через compressImage
-//   перед сохранением. Это защищает от лимита Firestore в 1 МБ.
+//   Файлы БОЛЬШЕ НЕ кладутся в Firestore base64-ом (лимит 1 МБ).
+//   Теперь и превью-картинка (src), и файл скачивания (downloadUrl)
+//   загружаются в Firebase Storage через uploadFile(), а в Firestore
+//   пишется только возвращённая ссылка.
+//   - УБРАНА отсечка 700 КБ — PDF любого размера до 20 МБ грузится.
+//   - Превью-картинка по-прежнему СЖИМАЕТСЯ (compressImage) ПЕРЕД
+//     загрузкой, чтобы не хранить 5 МБ оригинал и быстрее грузить на сайте.
+//   - Добавлен индикатор прогресса загрузки (⏳ … %), чтобы админ не
+//     думал, что зависло.
+//   - <img src={doc.src}> работает и для base64 (старые данные), и для
+//     https-ссылки из Storage — превью менять не пришлось.
+//   Обратная совместимость: старые документы с base64 продолжают
+//   отображаться; новые сохраняются ссылками.
 // ============================================================
 
-import { useRef } from "react";
-import { compressImage } from "../../utils/compressImage"; // ← новый импорт
+import { useRef, useState } from "react";
+import { compressImage } from "../../utils/compressImage";
+import { uploadFile } from "../../utils/uploadToStorage";
 
 const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
     const srcInputRef = useRef(null);
     const downloadInputRef = useRef(null);
 
-    /**
-     * Выбор изображения для ПРЕВЬЮ (src).
-     * Теперь со сжатием.
-     */
+    // Прогресс загрузки (null = не грузим). Отдельно для превью и файла.
+    const [srcProgress, setSrcProgress] = useState(null);
+    const [dlProgress, setDlProgress] = useState(null);
+
+    /** Выбор картинки ПРЕВЬЮ: сжатие → загрузка в Storage → ссылка в поле src. */
     const handleSrcFileSelect = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Проверяем, что это изображение
         if (!file.type.startsWith("image/")) {
             alert("Пожалуйста, выберите файл изображения (PNG, JPG, GIF и т.д.)");
             return;
         }
 
+        setSrcProgress(0);
         try {
-            // Показываем, что идёт обработка (опционально)
-            // Сжимаем: максимум 1200px по ширине, качество 70%
-            const compressedBase64 = await compressImage(file, 1200, 0.7);
-
-            // Сохраняем СЖАТУЮ картинку (весит в разы меньше оригинала)
-            onChange(index, "src", compressedBase64);
+            // 1) Сжимаем в base64 (как раньше).
+            const compressedDataUrl = await compressImage(file, 1400, 0.8);
+            // 2) base64 → Blob → File (чтобы у загрузки было имя и тип).
+            const blob = await (await fetch(compressedDataUrl)).blob();
+            const baseName = (file.name || "image").replace(/\.[^.]+$/, "");
+            const jpg = new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+            // 3) Грузим в Storage, получаем ссылку.
+            const url = await uploadFile(jpg, "documents/images", setSrcProgress);
+            onChange(index, "src", url);
         } catch (error) {
-            console.error("Ошибка сжатия изображения:", error);
-            alert("Не удалось обработать изображение. Попробуйте другой файл.");
+            console.error("Ошибка загрузки изображения:", error);
+            alert("Не удалось загрузить изображение. Проверьте интернет и попробуйте снова.");
+        } finally {
+            setSrcProgress(null);
+            if (srcInputRef.current) srcInputRef.current.value = "";
         }
     };
 
-    /**
-     * Выбор файла для СКАЧИВАНИЯ (downloadUrl).
-     * Здесь сжатие НЕ применяем (это может быть PDF/DOCX),
-     * но проверяем размер, чтобы не превысить лимит Firestore.
-     */
-    const handleDownloadFileSelect = (e) => {
+    /** Выбор файла СКАЧИВАНИЯ (PDF и др.): сразу в Storage, без base64 и без лимита 700 КБ. */
+    const handleDownloadFileSelect = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Лимит ~700 КБ для файла скачивания (с запасом под 1 МБ документа)
-        if (file.size > 700 * 1024) {
+        setDlProgress(0);
+        try {
+            const url = await uploadFile(file, "documents/files", setDlProgress);
+            onChange(index, "downloadUrl", url);
+        } catch (error) {
+            console.error("Ошибка загрузки файла:", error);
             alert(
-                "Файл слишком большой для хранения в облаке.\n" +
-                "Максимум ~700 КБ. Сожмите файл или используйте ссылку на облачное хранилище."
+                "Не удалось загрузить файл.\n" +
+                "Возможные причины: файл больше 20 МБ, неподходящий тип, " +
+                "или Storage не включён в консоли Firebase (см. шаг 0)."
             );
-            return;
+        } finally {
+            setDlProgress(null);
+            if (downloadInputRef.current) downloadInputRef.current.value = "";
         }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            onChange(index, "downloadUrl", event.target.result);
-        };
-        reader.readAsDataURL(file);
     };
 
     const handleRemoveSrc = () => {
@@ -73,9 +90,6 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
         onChange(index, "downloadUrl", "");
         if (downloadInputRef.current) downloadInputRef.current.value = "";
     };
-
-    // ... ДАЛЬШЕ ИДЁТ ТОТ ЖЕ JSX (return), ЧТО БЫЛ РАНЬШЕ ...
-    // Его менять не нужно — поля, кнопки, превью остаются прежними.
 
     return (
         <div className="admin-card admin-card--document">
@@ -95,12 +109,11 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
 
             <div className="admin-card__body">
                 {/* ============================================
-                    ПРЕВЬЮ ИЗОБРАЖЕНИЯ + КНОПКА ВЫБОРА ФАЙЛА
+                    ПРЕВЬЮ ИЗОБРАЖЕНИЯ
                     ============================================ */}
                 <div className="admin-field">
                     <label className="admin-field__label">Изображение документа</label>
 
-                    {/* Превью: показываем картинку или заглушку */}
                     <div className="admin-image-preview">
                         {doc.src ? (
                             <img
@@ -115,11 +128,6 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
                         )}
                     </div>
 
-                    {/*
-                        СКРЫТЫЙ input type="file".
-                        accept="image/*" — в проводнике показываются только картинки.
-                        style={{display:"none"}} — прячем стандартный некрасивый инпут.
-                    */}
                     <input
                         ref={srcInputRef}
                         type="file"
@@ -128,16 +136,16 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
                         onChange={handleSrcFileSelect}
                     />
 
-                    {/* Кнопки: выбрать / удалить */}
                     <div className="admin-file-buttons">
                         <button
                             type="button"
                             className="admin-btn admin-btn--file"
                             onClick={() => srcInputRef.current?.click()}
+                            disabled={srcProgress !== null}
                         >
-                            📁 Выбрать изображение
+                            {srcProgress !== null ? "⏳ Загрузка…" : "📁 Выбрать изображение"}
                         </button>
-                        {doc.src && (
+                        {doc.src && srcProgress === null && (
                             <button
                                 type="button"
                                 className="admin-btn admin-btn--remove-file"
@@ -147,6 +155,12 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
                             </button>
                         )}
                     </div>
+
+                    {srcProgress !== null && (
+                        <div className="admin-file-status" style={{ marginTop: "6px" }}>
+                            ⏳ Загрузка изображения… {srcProgress}%
+                        </div>
+                    )}
                 </div>
 
                 {/* ---- Заголовок ---- */}
@@ -198,25 +212,19 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
                 </div>
 
                 {/* ============================================
-                    ФАЙЛ ДЛЯ СКАЧИВАНИЯ
+                    ФАЙЛ ДЛЯ СКАЧИВАНИЯ (PDF и др.) — теперь через Storage
                     ============================================ */}
                 <div className="admin-field">
-                    <label className="admin-field__label">Файл для скачивания</label>
+                    <label className="admin-field__label">Файл для скачивания (PDF и др.)</label>
 
-                    {/* Показываем имя/статус выбранного файла */}
                     <div className="admin-file-status">
                         {doc.downloadUrl ? (
-                            <span className="admin-file-status__selected">
-                                ✅ Файл выбран
-                            </span>
+                            <span className="admin-file-status__selected">✅ Файл загружен</span>
                         ) : (
-                            <span className="admin-file-status__empty">
-                                Файл не выбран
-                            </span>
+                            <span className="admin-file-status__empty">Файл не выбран</span>
                         )}
                     </div>
 
-                    {/* Скрытый input для файла скачивания (любой тип) */}
                     <input
                         ref={downloadInputRef}
                         type="file"
@@ -229,10 +237,11 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
                             type="button"
                             className="admin-btn admin-btn--file"
                             onClick={() => downloadInputRef.current?.click()}
+                            disabled={dlProgress !== null}
                         >
-                            📎 Выбрать файл для скачивания
+                            {dlProgress !== null ? "⏳ Загрузка…" : "📎 Выбрать файл (PDF)"}
                         </button>
-                        {doc.downloadUrl && (
+                        {doc.downloadUrl && dlProgress === null && (
                             <button
                                 type="button"
                                 className="admin-btn admin-btn--remove-file"
@@ -242,6 +251,12 @@ const AdminDocumentCard = ({ index, doc, onChange, onDelete }) => {
                             </button>
                         )}
                     </div>
+
+                    {dlProgress !== null && (
+                        <div className="admin-file-status" style={{ marginTop: "6px" }}>
+                            ⏳ Загрузка файла… {dlProgress}%
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

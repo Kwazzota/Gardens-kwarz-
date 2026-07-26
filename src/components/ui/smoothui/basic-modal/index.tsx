@@ -115,7 +115,7 @@ export default function BasicModal({
 
               <motion.div
                   animate={{ opacity: 1 }}
-                  className="fixed inset-0 z-90 flex items-center justify-center overflow-y-auto px-4 py-6 sm:p-0"
+                  className="fixed inset-0 z-90 flex overflow-y-auto px-4 py-6 sm:p-0"
                   exit={{ opacity: 0 }}
                   initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
                   transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
@@ -125,8 +125,8 @@ export default function BasicModal({
                     aria-labelledby={titleId}
                     aria-modal="true"
                     // <-- Здесь добавлена логика noPadding
-                    className={`${modalSizes[size]} relative mx-auto w-full rounded-xl border bg-primary shadow-xl ${
-                        noPadding ? "p-0 overflow-hidden" : "p-4 sm:p-6"
+                    className={`${modalSizes[size]} relative m-auto w-full max-h-[90vh] overflow-y-auto rounded-xl border bg-primary shadow-xl ${
+                        noPadding ? "p-0" : "p-4 sm:p-6"
                     }`}
                     exit={
                       shouldReduceMotion
@@ -170,7 +170,7 @@ export default function BasicModal({
                   </div>
 
                   {/* Content */}
-                  <div className={noPadding ? "w-full h-full flex items-center justify-center" : "relative"}>
+                  <div className={noPadding ? "w-full flex items-center justify-center" : "relative"}>
                     {children}
                   </div>
                 </motion.div>
