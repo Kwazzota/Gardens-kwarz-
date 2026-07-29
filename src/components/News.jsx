@@ -107,7 +107,7 @@ export default function News() {
     if (loading) return null; // секция просто не рисуется до загрузки
 
     return (
-        <section className="news-card w-[60%] max-w-[720px] mx-auto max-md:w-[92%] py-10">
+        <section className="news-card mx-auto w-[60%] max-w-[720px] py-10 max-md:w-[92%] max-[525px]:w-full max-[525px]:px-4">
             <div className="flex flex-col w-full">
                 <div className="w-full border-t border-current opacity-15" />
 

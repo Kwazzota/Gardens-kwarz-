@@ -4,7 +4,6 @@ import './variables.css'
 import './utils.css'
 import './globals.css'
 
-import './components/hero.css'
 import './components/main.css'
 import './components/documents.css'
 import './components/footer.css'
