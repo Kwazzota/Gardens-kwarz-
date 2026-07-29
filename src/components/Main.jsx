@@ -1,31 +1,23 @@
 // ============================================================
-// Main.jsx — читает данные из облака Firestore
+// Main.jsx — единый контейнер секций (одна колонка на всех ширинах).
 //
-// ЧТО ДОБАВЛЕНО:
-//   Высота свёрнутой карточки (itemHeight) теперь АДАПТИВНАЯ:
-//     - экран шире 525px  → 80px  (как было);
-//     - экран <= 525px    → 130px (заголовок на мобилках переносится
-//                                  на 2 строки, 80px не хватало).
-//   Реализовано через window.matchMedia + подписку на изменение,
-//   потому что высота передаётся в компонент ПРОПСОМ collapsedHeight
-//   и попадает в инлайн-style — CSS-ом через @media это не поменять,
-//   не сломав раскрытое состояние.
-//   itemHeight идёт и в HoverExpand, и в AnnouncementList, и в
-//   maxHeight обёртки — поэтому всё пересчитывается согласованно.
+// ЧТО ИЗМЕНИЛОСЬ:
+//   1) Новости рендерятся ПРЯМО ЗДЕСЬ, первым блоком (импорт News).
+//      Раньше News жил отдельно в HomePage и считал ширину в % от
+//      экрана → вылезал за контент. Теперь новости, объявления и
+//      документы — дети одного .main, поэтому имеют ОДИНАКОВУЮ ширину
+//      и отступы автоматически (вылезание исчезает без угадывания CSS).
+//   2) Порядок секций: НОВОСТИ → ОБЪЯВЛЕНИЯ → ДОКУМЕНТЫ.
+//   3) Одна колонка на всех ширинах задаётся в CSS: .main стал
+//      flex-column (см. блок в index.css) — перебивает прежний grid
+//      из двух колонок.
 // ============================================================
 
-import { useState, useEffect } from "react";
 import AnnouncementList from "./AnnouncementList";
 import { HoverExpand } from "./unlumen-ui/hover-expand";
+import News from "./News";
 import { useFirestoreData } from "../hooks/useFirestoreData";
 import { defaultItems, defaultDocuments } from "../data/defaultData";
-
-// Высота ОДНОЙ свёрнутой карточки в зависимости от ширины экрана.
-const getItemHeight = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 525px)").matches
-        ? 130
-        : 80;
 
 const Main = () => {
     const { data: items, loading: itemsLoading } =
@@ -33,19 +25,8 @@ const Main = () => {
     const { data: documents, loading: docsLoading } =
         useFirestoreData("documents", defaultDocuments);
 
-    // Текущая высота свёрнутой карточки (80 или 130).
-    const [itemHeight, setItemHeight] = useState(getItemHeight);
-
-    // Подписка: при переходе через границу 525px (ресайз / поворот
-    // телефона) пересчитываем высоту.
-    useEffect(() => {
-        const mq = window.matchMedia("(max-width: 525px)");
-        const onChange = () => setItemHeight(getItemHeight());
-        mq.addEventListener("change", onChange);
-        return () => mq.removeEventListener("change", onChange);
-    }, []);
-
-    const VISIBLE_ITEMS = 4;
+    const VISIBLE_ITEMS = 5;
+    const ITEM_HEIGHT = 80;
 
     if (itemsLoading || docsLoading) {
         return (
@@ -65,17 +46,22 @@ const Main = () => {
 
     return (
         <div className="main">
+            {/* 1) НОВОСТИ — первый блок (ширина = ширине .main) */}
+            <News />
+
+            {/* 2) ОБЪЯВЛЕНИЯ */}
             <div
                 className="documents__list-wrapper overflow-y-auto custom-scrollbar"
-                style={{ maxHeight: `${itemHeight * VISIBLE_ITEMS + 1}px` }}
+                style={{ maxHeight: `${ITEM_HEIGHT * VISIBLE_ITEMS + 1}px` }}
             >
-                <HoverExpand items={items} collapsedHeight={itemHeight} />
+                <HoverExpand items={items} collapsedHeight={ITEM_HEIGHT} />
             </div>
 
+            {/* 3) ДОКУМЕНТЫ */}
             <AnnouncementList
                 items={documents}
                 visibleItems={VISIBLE_ITEMS}
-                collapsedHeight={itemHeight}
+                collapsedHeight={ITEM_HEIGHT}
             />
         </div>
     );

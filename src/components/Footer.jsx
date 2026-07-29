@@ -13,7 +13,7 @@ const MAPS_URL =
     "https://yandex.ru/maps/geo/kollektivny_sad_kvarts/1659488301/?ll=60.370736%2C56.828530&z=17";
 const EMAIL = "kvarcsnt@gmail.com";
 
-const SCHEME_FILE = `${import.meta.env.BASE_URL}scheme.png`;
+const SCHEME_FILE = `${import.meta.env.BASE_URL}scheme.jpg`;
 const SCHEME_IS_IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i.test(SCHEME_FILE);
 
 const Footer = () => {

@@ -14,7 +14,6 @@ const HomePage = () => {
         <>
             <Hero />
             <Main />
-            <News />
             <Footer />
         </>
     );
