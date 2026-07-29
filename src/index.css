@@ -17,44 +17,6 @@
     }
 
 }
-/* Стили скроллбара */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(120, 113, 108, 0.3);
-    border-radius: 3px;
-    transition: background 0.2s ease;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(120, 113, 108, 0.5);
-}
-
-.custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(120, 113, 108, 0.3) transparent;
-}
-
-/* ============================================================
-   РАЗДЕЛИТЕЛИ СЕКЦИЙ — мягкая «карточка» вокруг каждой секции.
-   Применяется к уже существующим обёрткам:
-     .documents__list-wrapper — левая колонка (объявления);
-     .announcement-list       — правая колонка (документы);
-     .news-card               — секция новостей (маркер в News.jsx).
-   Используются ТОЛЬКО оформляющие свойства (фон/рамка/скругление/
-   тень + горизонтальный padding) — они НЕ влияют на grid/flex
-   раскладку двух колонок (везде box-sizing: border-box), поэтому
-   Main.jsx и AnnouncementList.jsx трогать не нужно.
-   Тень и рамка на этих обёртках сейчас не заданы → применятся всегда;
-   фон — бонус (если где-то перебит существующим правилом — см. ниже).
-   ============================================================ */
 .documents__list-wrapper,
 .announcement-list,
 .news-card {
@@ -73,21 +35,4 @@
 .news-card {
     padding: 5px 16px;
     margin-bottom: 50px;
-}
-
-/* ============================================================
-   ОДНА КОЛОНКА СЕКЦИЙ НА ВСЕХ ШИРИНАХ (чек-лист).
-   .main был grid в две колонки (объявления | документы). Делаем
-   вертикальный стек: новости → объявления → документы. !important
-   перебивает grid из main.css независимо от порядка подключения.
-   align-items:stretch → каждый ребёнок (и новости, и обе панели)
-   тянется на всю ширину .main → ширины совпадают идеально, без
-   угадывания max-width/padding. gap = вертикальный зазор между
-   секциями-«карточками» (рамки не слипаются).
-   ============================================================ */
-.main {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch;
-    gap: 24px;
 }

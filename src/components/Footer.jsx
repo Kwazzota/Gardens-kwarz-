@@ -1,12 +1,20 @@
 // ============================================================
 // Footer.jsx — подвал: контакты + схема сада.
-// ЧТО ИЗМЕНИЛОСЬ (чек-лист п.2): телефон → email kvarcsnt@gmail.com
-//   (href="mailto:...", иконка конверта вместо трубки, новый aria-label).
-// Адрес-ссылка на карту и колонка схемы — без изменений.
+//
+// ЧТО ДОБАВЛЕНО (фикс «клик по почте ничего не делает»):
+//   mailto: открывает СИСТЕМНЫЙ почтовый клиент, а не вкладку. Если на
+//   компьютере клиент не настроен — клик выглядит как «ничего не происходит»
+//   (это не баг ссылки). Поэтому на клик по email теперь ДОПОЛНИТЕЛЬНО
+//   копируем адрес в буфер обмена и показываем тост снизу («Email скопирован»).
+//   mailto при этом НЕ блокируем (href остаётся) → если клиент есть, он
+//   откроется; если нет — пользователь всё равно получит адрес в буфере.
+//   Тост = ещё и диагностика: появился при клике → клик доходит, проблема
+//   была в клиенте; не появился → клик перехватывается, смотрим CSS.
+// Адрес-карта и колонка схемы — без изменений.
 // ============================================================
 
-import { useState } from "react";
-import { motion } from "motion/react";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import BasicModal from "./ui/smoothui/basic-modal";
 
 const MAPS_URL =
@@ -18,12 +26,47 @@ const SCHEME_IS_IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i.test(SCHEME_FILE);
 
 const Footer = () => {
     const [schemeOpen, setSchemeOpen] = useState(false);
+    const [toast, setToast] = useState(null);
+    const toastTimer = useRef(null);
+
+    // Чистим таймер тоста при размонтировании.
+    useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
     const handleSchemeClick = (e) => {
         if (SCHEME_IS_IMAGE) {
             e.preventDefault();
             setSchemeOpen(true);
         }
+    };
+
+    // Копирование email в буфер (с fallback для старых браузеров / http).
+    const copyEmail = async () => {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(EMAIL);
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = EMAIL;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+            }
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    // Клик по email: копируем + тост. mailto НЕ блокируем (href работает сам).
+    const handleEmailClick = async () => {
+        const ok = await copyEmail();
+        setToast(ok ? `Email скопирован: ${EMAIL}` : "Не удалось скопировать адрес");
+        window.clearTimeout(toastTimer.current);
+        toastTimer.current = window.setTimeout(() => setToast(null), 2500);
     };
 
     return (
@@ -54,17 +97,17 @@ const Footer = () => {
                             <circle cx="12" cy="10" r="3" />
                         </svg>
                         <span className="footer__link-text">
-                            Екатеринбургское шоссе, 65&nbsp;км, 3&nbsp;съезд
+                            коллективный сад Кварц, Екатеринбург, Свердловская область
                         </span>
                     </a>
 
-                    {/* Email → почтовый клиент (БЫЛ телефон) */}
+                    {/* Email → mailto + копирование в буфер + тост */}
                     <a
                         className="footer__link footer__link--email"
                         href={`mailto:${EMAIL}`}
-                        aria-label={`Написать на почту ${EMAIL}`}
+                        onClick={handleEmailClick}
+                        aria-label={`Написать на почту ${EMAIL} (адрес также копируется в буфер обмена)`}
                     >
-                        {/* Иконка конверта */}
                         <svg className="footer__link-icon" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                              strokeLinejoin="round" aria-hidden="true">
@@ -129,6 +172,33 @@ const Footer = () => {
                     <img src={SCHEME_FILE} alt="Схема сада «Кварц»" className="block max-w-full max-h-[80vh]" />
                 </BasicModal>
             )}
+
+            {/* Тост-подсказка (копирование email и т.п.) */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20, x: "-50%" }}
+                        animate={{ opacity: 1, y: 0, x: "-50%" }}
+                        exit={{ opacity: 0, y: 20, x: "-50%" }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                            position: "fixed",
+                            left: "50%",
+                            bottom: "24px",
+                            background: "rgba(40, 40, 40, 0.92)",
+                            color: "#fff",
+                            padding: "10px 18px",
+                            borderRadius: "999px",
+                            fontSize: "14px",
+                            zIndex: 200,
+                            boxShadow: "0 6px 20px rgba(0, 0, 0, 0.25)",
+                            pointerEvents: "none",
+                        }}
+                    >
+                        {toast}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -1,23 +1,30 @@
 // ============================================================
 // Main.jsx — единый контейнер секций (одна колонка на всех ширинах).
 //
-// ЧТО ИЗМЕНИЛОСЬ:
-//   1) Новости рендерятся ПРЯМО ЗДЕСЬ, первым блоком (импорт News).
-//      Раньше News жил отдельно в HomePage и считал ширину в % от
-//      экрана → вылезал за контент. Теперь новости, объявления и
-//      документы — дети одного .main, поэтому имеют ОДИНАКОВУЮ ширину
-//      и отступы автоматически (вылезание исчезает без угадывания CSS).
-//   2) Порядок секций: НОВОСТИ → ОБЪЯВЛЕНИЯ → ДОКУМЕНТЫ.
-//   3) Одна колонка на всех ширинах задаётся в CSS: .main стал
-//      flex-column (см. блок в index.css) — перебивает прежний grid
-//      из двух колонок.
+// ПОРЯДОК: НОВОСТИ → ОБЪЯВЛЕНИЯ → ДОКУМЕНТЫ.
+//
+// ЧТО ДОБАВЛЕНО (чек-лист):
+//   Каждая секция обёрнута в <section className="main-section"> с
+//   заголовком <h2 className="main-section__title">. Заголовки живут
+//   НАД панелями и ВНЕ их скролла (не скроллятся, не съедают maxHeight).
+//   Вертикальные отступы между секциями ведёт .main-section (padding-block),
+//   см. CSS в main.css.
+//
+// Адаптивная высота свёрнутой карточки (itemHeight) — как было:
+//   ≤525px → 130px, иначе → 80px (matchMedia + подписка).
 // ============================================================
 
+import { useState, useEffect } from "react";
 import AnnouncementList from "./AnnouncementList";
 import { HoverExpand } from "./unlumen-ui/hover-expand";
 import News from "./News";
 import { useFirestoreData } from "../hooks/useFirestoreData";
 import { defaultItems, defaultDocuments } from "../data/defaultData";
+
+const getItemHeight = () =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 590px)").matches
+        ? 160
+        : 80;
 
 const Main = () => {
     const { data: items, loading: itemsLoading } =
@@ -25,8 +32,16 @@ const Main = () => {
     const { data: documents, loading: docsLoading } =
         useFirestoreData("documents", defaultDocuments);
 
+    const [itemHeight, setItemHeight] = useState(getItemHeight);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 590px)");
+        const onChange = () => setItemHeight(getItemHeight());
+        mq.addEventListener("change", onChange);
+        return () => mq.removeEventListener("change", onChange);
+    }, []);
+
     const VISIBLE_ITEMS = 5;
-    const ITEM_HEIGHT = 80;
 
     if (itemsLoading || docsLoading) {
         return (
@@ -46,23 +61,32 @@ const Main = () => {
 
     return (
         <div className="main">
-            {/* 1) НОВОСТИ — первый блок (ширина = ширине .main) */}
-            <News />
+            {/* 1) НОВОСТИ */}
+            <section className="main-section">
+                <h2 className="main-section__title">Новости</h2>
+                <News />
+            </section>
 
             {/* 2) ОБЪЯВЛЕНИЯ */}
-            <div
-                className="documents__list-wrapper overflow-y-auto custom-scrollbar"
-                style={{ maxHeight: `${ITEM_HEIGHT * VISIBLE_ITEMS + 1}px` }}
-            >
-                <HoverExpand items={items} collapsedHeight={ITEM_HEIGHT} />
-            </div>
+            <section className="main-section">
+                <h2 className="main-section__title">Объявления</h2>
+                <div
+                    className="documents__list-wrapper overflow-y-auto custom-scrollbar"
+                    style={{ maxHeight: `${itemHeight * VISIBLE_ITEMS + 1}px` }}
+                >
+                    <HoverExpand items={items} collapsedHeight={itemHeight} />
+                </div>
+            </section>
 
             {/* 3) ДОКУМЕНТЫ */}
-            <AnnouncementList
-                items={documents}
-                visibleItems={VISIBLE_ITEMS}
-                collapsedHeight={ITEM_HEIGHT}
-            />
+            <section className="main-section">
+                <h2 className="main-section__title">Документы</h2>
+                <AnnouncementList
+                    items={documents}
+                    visibleItems={VISIBLE_ITEMS}
+                    collapsedHeight={itemHeight}
+                />
+            </section>
         </div>
     );
 };
