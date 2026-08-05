@@ -26,10 +26,6 @@ const AnnouncementList = ({ items, visibleItems = 5, collapsedHeight = 80 }) => 
                     className="announcement-item"
                     style={{ minHeight: `${collapsedHeight}px` }}
                 >
-                    <div className="announcement-item__number">
-                        {String(index + 1).padStart(2, "0")}
-                    </div>
-
                     <div className="announcement-item__content">
                         <h3 className="announcement-item__title">{item.label}</h3>
 
