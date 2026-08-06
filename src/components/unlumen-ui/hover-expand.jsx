@@ -129,14 +129,6 @@ export function HoverExpand({ items, collapsedHeight = 68, className }) {
                                     Геометрию/вид НЕ меняет (высота = сумме детей, как было). */}
                                 <div ref={(el) => (contentRefs.current[i] = el)}>
                                     <div className="flex items-baseline gap-3 mb-2">
-                                        <motion.span
-                                            className="text-xs tabular-nums shrink-0 opacity-40 font-medium"
-                                            animate={{ opacity: isHovered ? 0.6 : 0.4 }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            {String(i + 1).padStart(2, "0")}
-                                        </motion.span>
-
                                         {/* truncate УБРАН → заголовок переносится на новую строку */}
                                         <motion.h3
                                             className="font-semibold tracking-tight flex-1 whitespace-normal break-words"

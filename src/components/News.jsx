@@ -187,13 +187,10 @@ export default function News() {
                                     Видим только в свёрнутом виде (в раскрытом opacity:0).
                                     pointer-events-none — чтобы клики проходили на баннер. */}
                                 <motion.div
-                                    className="absolute inset-0 px-5 flex items-center gap-3 pointer-events-none"
+                                    className="absolute inset-0 px-5 flex items-center pointer-events-none"
                                     animate={{ opacity: isHovered ? 0 : 1 }}
                                     transition={{ duration: 0.2 }}
                                 >
-                                    <span className="text-xs tabular-nums shrink-0 opacity-40 font-medium">
-                                        {String(i + 1).padStart(2, "0")}
-                                    </span>
                                     <h3
                                         className="font-semibold tracking-tight whitespace-normal break-words"
                                         style={{ fontSize: "clamp(1rem, 2vw, 1.35rem)" }}
